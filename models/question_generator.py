@@ -40,7 +40,7 @@ class QuestionGenerator:
         try:
             self.llm = ChatGroq(
                 groq_api_key=self.api_key,
-                model_name="llama-3.1-70b-versatile",
+                model_name="whisper-large-v3-turbo",
                 temperature=0.7
             )
             logger.info("Successfully initialized Groq LLM")
