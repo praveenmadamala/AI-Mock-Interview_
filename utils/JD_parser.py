@@ -3,6 +3,8 @@ from typing import Dict, List, Optional
 import re
 from pathlib import Path
 import logging
+import pdfplumber
+import docx
 
 
 class JobDescriptionParser:
@@ -24,16 +26,34 @@ class JobDescriptionParser:
             r"familiarity with (.*?)\."
         ]
 
-    def parse_job_description(self, text: str) -> Dict[str, List[str]]:
+    def _read_file(self, file_path: str) -> str:
+        """Read text from a PDF, DOCX, or plain-text file."""
+        path = Path(file_path)
+        if path.suffix.lower() == ".pdf":
+            text = ""
+            with pdfplumber.open(file_path) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+            return text
+        elif path.suffix.lower() == ".docx":
+            doc = docx.Document(file_path)
+            return "\n".join(p.text for p in doc.paragraphs)
+        else:
+            return path.read_text(encoding="utf-8", errors="ignore")
+
+    def parse_job_description(self, file_path: str) -> Dict[str, List[str]]:
         """
-        Parse job description text to extract key information
+        Parse job description file to extract key information
 
         Args:
-            text (str): Raw job description text
+            file_path (str): Path to a PDF, DOCX, or TXT file
 
         Returns:
             Dict with keys: required_skills, responsibilities, qualifications
         """
+        text = self._read_file(file_path)
         parsed_data = {
             "required_skills": [],
             "responsibilities": [],
