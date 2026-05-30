@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 import logging
 import json
+import re
 from datetime import datetime
 
 # Configure logging
@@ -27,7 +28,7 @@ class InterviewAnswerEvaluator:
         try:
             self.llm = ChatGroq(
                 groq_api_key=self.api_key,
-                model_name="llama-3.2-90b-text-preview"
+                model_name="meta-llama/llama-4-scout-17b-16e-instruct"
             )
             logger.info("Successfully initialized Groq LLM")
         except Exception as e:
@@ -54,7 +55,11 @@ class InterviewAnswerEvaluator:
         try:
             response = self.llm.invoke(prompt)
             logger.debug(f"Received response from Groq: {response.content[:100]}...")
-            return response.content.strip()
+            content = response.content.strip()
+            if "```" in content:
+                content = re.sub(r'^```(?:json)?\s*', '', content)
+                content = re.sub(r'\s*```\s*$', '', content).strip()
+            return content
         except Exception as e:
             logger.error(f"Error in _evaluate_answer_with_groq: {str(e)}")
             return "Error in evaluation"
@@ -82,19 +87,16 @@ Context:
 - CV Summary: {cv_context}
 - Job Description: {jd_context}
 
-Provide a comprehensive evaluation in JSON format with:
+Provide evaluation in JSON format with exactly these keys:
 {{
-    "question_number": {len(st.session_state.interview_session['answers']) + 1},
-    "relevance_score": "Score 0-100 for how well the answer addresses the question",
-    "technical_accuracy": "Detailed assessment of technical accuracy and depth",
-    "communication_clarity": "Evaluation of how clearly the answer was presented",
-    "key_strengths": ["Specific", "strong", "points", "in", "answer"],
-    "improvement_areas": ["Specific", "areas", "needing", "work"],
-    "detailed_feedback": "Comprehensive feedback with specific examples from the answer",
-    "suggestions": "Concrete suggestions for improvement",
-    "overall_score": "Numerical score 0-100",
-    "quick_tips": ["Short", "actionable", "improvement", "tips"]
+    "relevance": "score as percentage e.g. 75%",
+    "clarity": "score as percentage e.g. 80%",
+    "skills_demonstration": "score as percentage e.g. 70%",
+    "alignment": "text description of how well the answer aligns with job requirements",
+    "detailed_feedback": "comprehensive feedback with specific examples",
+    "suggestions": "concrete suggestions for improvement"
 }}
+Respond with only the JSON object, no markdown or code fences.
 """
         try:
             evaluation_json_str = self._evaluate_answer_with_groq(prompt)
@@ -194,16 +196,12 @@ Provide a comprehensive evaluation in JSON format with:
     def _get_default_evaluation(self) -> Dict[str, any]:
         """Return default evaluation structure when parsing fails"""
         return {
-            'question_number': len(st.session_state.interview_session['answers']) + 1,
-            'relevance_score': 0,
-            'technical_accuracy': "Error evaluating technical accuracy",
-            'communication_clarity': "Error evaluating communication clarity",
-            'key_strengths': [],
-            'improvement_areas': [],
-            'detailed_feedback': "Error generating detailed feedback",
-            'suggestions': "Error generating suggestions",
-            'overall_score': 0,
-            'quick_tips': []
+            'relevance': '0%',
+            'clarity': '0%',
+            'skills_demonstration': '0%',
+            'alignment': 'Error generating evaluation',
+            'detailed_feedback': 'Error generating detailed feedback',
+            'suggestions': 'Error generating suggestions'
         }
 
     def clear_session(self):

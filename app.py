@@ -125,11 +125,11 @@ def display_interview_summary():
     if st.session_state.feedback:
         # Calculate metrics based on the feedback structure
         metrics = {
-            'relevance': sum(float(f.get('relevance', '0').rstrip('%')) / 100
+            'relevance': sum(float(str(f.get('relevance', '0')).rstrip('%')) / 100
                              for f in st.session_state.feedback.values()) / len(st.session_state.feedback),
-            'clarity': sum(float(f.get('clarity', '0').rstrip('%')) / 100
+            'clarity': sum(float(str(f.get('clarity', '0')).rstrip('%')) / 100
                            for f in st.session_state.feedback.values()) / len(st.session_state.feedback),
-            'skills_demonstration': sum(float(f.get('skills_demonstration', '0').rstrip('%')) / 100
+            'skills_demonstration': sum(float(str(f.get('skills_demonstration', '0')).rstrip('%')) / 100
                                         for f in st.session_state.feedback.values()) / len(st.session_state.feedback)
         }
 

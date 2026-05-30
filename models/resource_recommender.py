@@ -22,7 +22,7 @@ class ResourceRecommender:
             raise ValueError("Groq API key not found in environment variables.")
 
         try:
-            groq = ChatGroq(groq_api_key=api_key, model_name="llama-3.2-90b-text-preview")
+            groq = ChatGroq(groq_api_key=api_key, model_name="compound-beta-mini")
             logger.info("Successfully initialized Groq LLM for resource recommendations.")
             return groq
         except Exception as e:
@@ -119,6 +119,31 @@ for improving skills in these weak areas. Provide recommendations in JSON format
                 "interview_prep": [],
                 "additional": []
             }
+
+    def recommend_resources(self, clarity: float, relevance: float, skills_demonstration: float) -> List[str]:
+        """Return resource recommendations based on interview scores (0.0–1.0 floats)."""
+        weak_areas = []
+        if clarity < 0.7:
+            weak_areas.append("communication clarity")
+        if relevance < 0.7:
+            weak_areas.append("answer relevance")
+        if skills_demonstration < 0.7:
+            weak_areas.append("skills demonstration")
+
+        if not weak_areas:
+            return ["Great performance! Keep practicing to maintain your skills."]
+
+        prompt = (
+            f"Suggest 3-5 concise learning resources for improving: {', '.join(weak_areas)}. "
+            "Return only a plain bullet list, no markdown headers."
+        )
+        try:
+            response = self.groq.invoke(prompt)
+            lines = [l.strip() for l in response.content.strip().split('\n') if l.strip()]
+            return lines
+        except Exception as e:
+            logger.error(f"Error getting recommendations: {str(e)}")
+            return [f"Focus on improving: {', '.join(weak_areas)}"]
 
     def _identify_weak_areas(self, feedback: Dict) -> List[str]:
         """Identify areas needing improvement based on interview feedback."""

@@ -40,7 +40,7 @@ class QuestionGenerator:
         try:
             self.llm = ChatGroq(
                 groq_api_key=self.api_key,
-                model_name="whisper-large-v3-turbo",
+                model_name="llama-3.1-8b-instant",
                 temperature=0.7
             )
             logger.info("Successfully initialized Groq LLM")
@@ -198,7 +198,7 @@ Format the output exactly as follows:
             # Update LLM parameters
             self.llm = ChatGroq(
                 groq_api_key=self.api_key,
-                model_name="llama-3.1-70b-versatile",
+                model_name="llama-3.3-70b-versatile",
                 temperature=temperature
             )
 
@@ -213,10 +213,10 @@ Format the output exactly as follows:
             for line in response.content.strip().split('\n'):
                 line = line.strip()
                 # Improved number detection regex
-                if line and re.match(r'^\d{1,2}[\.$$]', line):
+                if line and re.match(r'^\d{1,2}[\.\)\-]', line):
                     try:
                         # Extract question after the number and any delimiter
-                        question = re.split(r'^\d{1,2}[\.$$]\s*', line)[1].strip()
+                        question = re.split(r'^\d{1,2}[\.\)\-]\s*', line)[1].strip()
                         if self._is_question_unique(question):
                             questions.append(question)
                             self._add_to_history(question)
